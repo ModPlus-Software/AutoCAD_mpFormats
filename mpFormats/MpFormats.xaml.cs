@@ -881,7 +881,9 @@
                                 orientation,
                                 number,
                                 ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                CbBottomFrame.SelectionBoxItem.ToString(),
+                                CbBottomFrame.SelectedIndex == 0 
+                                    ? ModPlusAPI.Language.GetItem(LangItem, "h18")
+                                    : ModPlusAPI.Language.GetItem(LangItem, "h19"),
                                 false,
                                 new Point3d(0.0, 0.0, 0.0),
                                 CbTextStyle.SelectedItem.ToString(),
@@ -1128,7 +1130,9 @@
                                 orientation,
                                 number,
                                 ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                CbBottomFrame.SelectionBoxItem.ToString(),
+                                CbBottomFrame.SelectedIndex == 0 
+                                    ? ModPlusAPI.Language.GetItem(LangItem, "h18")
+                                    : ModPlusAPI.Language.GetItem(LangItem, "h19"),
                                 true,
                                 new Point3d(0.0, 0.0, 0.0),
                                 CbTextStyle.SelectedItem.ToString(),
