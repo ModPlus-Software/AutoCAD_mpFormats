@@ -76,7 +76,12 @@
                     SmallTextHeight = double.TryParse(xElement.Attribute("smallTextHeight")?.Value, out var d) ? d : 0.0,
                     FixLeftBorder = GetCellCoordinates(xElement.Attribute("fixLeftBorder")?.Value),
                     FixTopBorder = GetCellCoordinates(xElement.Attribute("fixTopBorder")?.Value),
+                    FixRightBorder = GetCellCoordinates(xElement.Attribute("fixRightBorder")?.Value),
+                    FixBottomBorder = GetCellCoordinates(xElement.Attribute("fixBottomBorder")?.Value),
+                    FixLeftThickBorder = GetCellCoordinates(xElement.Attribute("fixLeftThickBorder")?.Value),
                     FixTopThickBorder = GetCellCoordinates(xElement.Attribute("fixTopThickBorder")?.Value),
+                    FixRightThickBorder = GetCellCoordinates(xElement.Attribute("fixRightThickBorder")?.Value),
+                    FixBottomThickBorder = GetCellCoordinates(xElement.Attribute("fixBottomThickBorder")?.Value),
                     DateCoordinates = GetCellCoordinates(xElement.Attribute("dateCoordinates")?.Value)
                 };
 

@@ -121,9 +121,34 @@
         public List<CellCoordinate> FixTopBorder { get; set; }
 
         /// <summary>
+        /// Ячейки у которых нужно "исправить" правую границу
+        /// </summary>
+        public List<CellCoordinate> FixRightBorder { get; set; }
+
+        /// <summary>
+        /// Ячейки у которых нужно "исправить" нижнюю границу
+        /// </summary>
+        public List<CellCoordinate> FixBottomBorder { get; set; }
+
+        /// <summary>
+        /// Ячейки у которых нужно "исправить" левую границу на толстую (0,4)
+        /// </summary>
+        public List<CellCoordinate> FixLeftThickBorder { get; set; }
+
+        /// <summary>
         /// Ячейки у которых нужно "исправить" верхнюю границу на толстую (0,4)
         /// </summary>
         public List<CellCoordinate> FixTopThickBorder { get; set; }
+
+        /// <summary>
+        /// Ячейки у которых нужно "исправить" правую границу на толстую (0,4)
+        /// </summary>
+        public List<CellCoordinate> FixRightThickBorder { get; set; }
+
+        /// <summary>
+        /// Ячейки у которых нужно "исправить" нижнюю границу на толстую (0,4)
+        /// </summary>
+        public List<CellCoordinate> FixBottomThickBorder { get; set; }
 
         /// <summary>
         /// Координаты ячеек (колонка, строка) для вставки поля "Дата"

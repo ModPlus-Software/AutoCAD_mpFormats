@@ -4,6 +4,7 @@
                      mc:Ignorable="d" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                      xmlns:mps="https://modplus.org/winfx/xaml/controls"
+                     xmlns:model="clr-namespace:ModPlus.Model;assembly=ModPlus_2021"
                      SizeToContent="WidthAndHeight"
                      MouseEnter="MetroWindow_MouseEnter" MouseLeave="MetroWindow_MouseLeave"
                      Closed="Window_Closed" ResizeMode="NoResize" 
@@ -14,7 +15,7 @@
                 <ResourceDictionary Source="pack://application:,,,/ModPlusStyle;component/Styles/Controls.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <XmlDataProvider x:Key="Lang" Source="E:/ModPlus/Languages/en-US.xml" XPath="ModPlus/mpFormats" IsAsynchronous="False"></XmlDataProvider>
+            <XmlDataProvider x:Key="Lang" Source="E:/ModPlus/Languages/en-US.xml" XPath="ModPlus/mpFormats" />
         </ResourceDictionary>
     </Window.Resources>
     <mps:ModPlusWindow.RightWindowCommands>
@@ -226,16 +227,19 @@
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="{Binding Source={StaticResource Lang}, XPath=h22}"></TextBlock>
-            <ComboBox Name="CbTables" Grid.Column="1" Grid.ColumnSpan="4" Grid.Row="0" VerticalAlignment="Center" Margin="2"
-                          SelectionChanged="CbTables_SelectionChanged" Width="374" Height="72">
+            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" 
+                       Text="{Binding Source={StaticResource Lang}, XPath=h22}"/>
+            <ComboBox Name="CbTables" Grid.Column="1" Grid.ColumnSpan="4" 
+                      Grid.Row="0" VerticalAlignment="Center" Margin="2"
+                      SelectionChanged="CbTables_SelectionChanged" Width="374" Height="72">
                 <ComboBox.ItemContainerStyle>
                     <Style TargetType="ComboBoxItem">
                         <Setter Property="Width" Value="500"></Setter>
@@ -256,10 +260,10 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
             <StackPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="5" Orientation="Horizontal">
-                <CheckBox Name="ChbHasFields"
+                <CheckBox Name="ChbHasFields" Margin="4 2"
                           Content="{Binding Source={StaticResource Lang}, XPath=h23}"></CheckBox>
                 <Button Name="BtFields" Padding="0" MinWidth="0" Width="24" Height="24" 
-                        Style="{DynamicResource ModPlusFlatButton}"
+                        Style="{DynamicResource ModPlusFlatButton}" Margin="4 2"
                         ToolTip="{Binding Source={StaticResource Lang}, XPath=h24}"
                         Click="BtFields_Click">
                     <Viewbox Width="24" Height="24">
@@ -270,23 +274,61 @@
                     </Viewbox>
                 </Button>
             </StackPanel>
-            <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2"
-                       Text="{Binding Source={StaticResource Lang}, XPath=h25}"></TextBlock>
+
+            <!-- text height -->
+            <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Margin="4 2"
+                       Text="{Binding Source={StaticResource Lang}, XPath=h25}"/>
             <TextBox VerticalAlignment="Center" Width="50"
-                     Grid.Column="2" Grid.Row="2"
+                     Grid.Column="2" Grid.Row="2" Margin="4 2"
                      MaxLength="5" Name="TbMainTextHeight"
                      PreviewKeyDown="TboxesNoSpaceBar_OnPreviewKeyDown"
                      PreviewTextInput="Tb_OnlyNums_NoMinus_OnPreviewTextInput"
                      >2.5</TextBox>
-            <TextBlock Grid.Column="3" Grid.Row="2"
-                       Text="{Binding Source={StaticResource Lang}, XPath=h26}"></TextBlock>
+            <TextBlock Grid.Column="3" Grid.Row="2" Margin="4 2"
+                       Text="{Binding Source={StaticResource Lang}, XPath=h26}"/>
             <TextBox VerticalAlignment="Center" Width="50"
-                     Grid.Column="4" Grid.Row="2"
+                     Grid.Column="4" Grid.Row="2" Margin="4 2"
                      MaxLength="5" Name="TbBigTextHeight"
                      PreviewKeyDown="TboxesNoSpaceBar_OnPreviewKeyDown"
                      PreviewTextInput="Tb_OnlyNums_NoMinus_OnPreviewTextInput">3.5</TextBox>
 
-            <Grid Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="3">
+            <!-- lines weight -->
+            <!--<Grid Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Margin="4 2"
+                           Text="{Binding Source={StaticResource Lang}, XPath=h79}"/>
+                <ComboBox Grid.Column="1" Name="CbThinLines" Margin="4 2"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=h81}"
+                          ToolTipService.InitialShowDelay="200"
+                          ToolTipService.ShowDuration="15000">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="model:LineWeightWrapper">
+                            <TextBlock Text="{Binding Path=DisplayName}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Grid.Column="2" Margin="4 2"
+                           Text="{Binding Source={StaticResource Lang}, XPath=h80}"/>
+                <ComboBox Grid.Column="3" Name="CbThickLines" Margin="4 2"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=h82}"
+                          ToolTipService.InitialShowDelay="200"
+                          ToolTipService.ShowDuration="15000">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="model:LineWeightWrapper">
+                            <TextBlock Text="{Binding Path=DisplayName}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>-->
+            
+            <!-- logo -->
+            <Grid Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
                     <ColumnDefinition Width="*"></ColumnDefinition>
@@ -298,24 +340,23 @@
                     <RowDefinition Height="Auto"></RowDefinition>
                 </Grid.RowDefinitions>
                 <TextBlock Text="{Binding Source={StaticResource Lang}, XPath=h27}" FontWeight="SemiBold"
-                           Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left"
-                           Margin="{DynamicResource ModPlusDefaultMargin}"></TextBlock>
-                <CheckBox Grid.Column="0" Grid.Row="1" 
+                           Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" Margin="4 2"/>
+                <CheckBox Grid.Column="0" Grid.Row="1" Margin="4 2"
                           Checked="ChkLogoFromBlock_OnChecked"
                           Unchecked="ChkLogoFromBlock_OnUnchecked"
                           Name="ChkLogoFromBlock" Content="{Binding Source={StaticResource Lang}, XPath=h28}"></CheckBox>
                 <ComboBox Name="CbLogo" MinWidth="120" IsEnabled="{Binding ElementName=ChkLogoFromBlock, Path=IsChecked}"
-                          Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2"/>
-                <CheckBox Grid.Column="0" Grid.Row="2" 
+                          Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2" Margin="4 2"/>
+                <CheckBox Grid.Column="0" Grid.Row="2" Margin="4 2"
                           Checked="ChkLogoFromFile_OnChecked"
                           Unchecked="ChkLogoFromFile_OnUnchecked"
                           Name="ChkLogoFromFile" Content="{Binding Source={StaticResource Lang}, XPath=h29}"></CheckBox>
-                <TextBox Grid.Column="1" Grid.Row="2" Width="286" Name="TbLogoFile"
+                <TextBox Grid.Column="1" Grid.Row="2" Width="286" Name="TbLogoFile" Margin="4 2"
                          ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                          IsReadOnly="True" mps:TextFieldAssist.ClearTextButton="True" ></TextBox>
                 <Button Grid.Row="2" Grid.Column="2" Style="{DynamicResource ModPlusFlatButton}"
                         Name="BtGetFileForLogo" Click="BtGetFileForLogo_OnClick" Width="24" Height="24"
-                        MinWidth="0" Padding="0" ToolTip="{Binding Source={StaticResource Lang}, XPath=h30}">
+                        MinWidth="0" Padding="0" ToolTip="{Binding Source={StaticResource Lang}, XPath=h30}" Margin="4 2">
                     <Viewbox Width="24" Height="24">
                         <Canvas Width="24" Height="24">
                             <Path Data="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10H23.21L20.93,18.5C20.7,19.37 19.92,20 19,20Z"
@@ -324,12 +365,13 @@
                     </Viewbox>
                 </Button>
             </Grid>
-            <GridSplitter Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="5"
+           
+            <GridSplitter Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
                           HorizontalAlignment="Stretch" Margin="0 4"
                           BorderBrush="{DynamicResource MidGrayBrush}" 
                           BorderThickness="0,1,0,0"></GridSplitter>
             <!--Должности-->
-            <Grid Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="5">
+            <Grid Grid.Column="0" Grid.Row="6" Grid.ColumnSpan="5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -430,7 +472,7 @@
         </Grid>
 
         <!--Images-->
-        <Grid Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
