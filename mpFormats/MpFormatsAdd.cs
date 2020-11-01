@@ -23,7 +23,9 @@
         [CommandMethod("ModPlus", "mpFormats", CommandFlags.Modal)]
         public void StartMpFormats()
         {
+#if !DEBUG
             Statistic.SendCommandStarting(new ModPlusConnector());
+#endif
 
             if (_mpFormats == null)
             {
