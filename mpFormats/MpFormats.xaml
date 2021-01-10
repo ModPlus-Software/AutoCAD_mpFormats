@@ -76,7 +76,7 @@
                         <RowDefinition Height="Auto"></RowDefinition>
                         <RowDefinition Height="Auto"></RowDefinition>
                     </Grid.RowDefinitions>
-                    
+
                     <!--Формат/кратность-->
                     <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Vertical">
                         <TextBlock Margin="{DynamicResource ModPlusDefaultMargin}"
@@ -126,7 +126,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <!--Формат-->
                     <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Vertical">
                         <TextBlock Margin="{DynamicResource ModPlusDefaultMargin}"
@@ -259,17 +259,49 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <StackPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="5" Orientation="Horizontal">
-                <CheckBox Name="ChbHasFields" Margin="4 2"
-                          Content="{Binding Source={StaticResource Lang}, XPath=h23}"></CheckBox>
-                <Button Name="BtFields" Padding="0" MinWidth="0" Width="24" Height="24" 
-                        Style="{DynamicResource ModPlusFlatButton}" Margin="4 2"
+
+            <!-- fields and signatures -->
+            <StackPanel Grid.Column="0"
+                        Grid.Row="1"
+                        Grid.ColumnSpan="5"
+                        Orientation="Horizontal">
+                <CheckBox Name="ChbHasFields"
+                          Margin="4 2"
+                          Content="{Binding Source={StaticResource Lang}, XPath=h23}"/>
+                <Button Name="BtFields"
+                        Padding="0"
+                        MinWidth="0"
+                        Width="24"
+                        Height="24" 
+                        Style="{DynamicResource ModPlusFlatButton}"
+                        Margin="4 2"
                         ToolTip="{Binding Source={StaticResource Lang}, XPath=h24}"
                         Click="BtFields_Click">
                     <Viewbox Width="24" Height="24">
                         <Canvas Width="24" Height="24">
                             <Path Data="M3.4,5.9l2.5-2.5L4.7,2.2C4.6,2.1,4.4,2,4.2,2C4,2,3.9,2.1,3.7,2.2L2.2,3.8c-0.3,0.3-0.3,0.7,0,1L3.4,5.9z M11.5,14H14v-2.5L6.6,4.1L4.1,6.6L11.5,14z M8.6,4l2,2H20v7h-4.5v1H20v4h-7v-2.5h-1V18H4V8.6l-2-2V20h20V4H8.6z"
                                   Fill="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Button}, Path=Foreground}"></Path>
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+
+                <!-- signatures -->
+                <CheckBox Content="{Binding Source={StaticResource Lang}, XPath=h83}"
+                          Name="ChkInsertSignatures"/>
+                <Button Name="BtSignatures"
+                        Padding="0"
+                        MinWidth="0"
+                        Width="24"
+                        Height="24"
+                        Style="{DynamicResource ModPlusFlatButton}"
+                        ToolTip="{Binding Source={StaticResource Lang}, XPath=h84}"
+                        Click="BtSignatures_OnClick">
+                    <Viewbox Width="24" Height="24">
+                        <Canvas Width="24" Height="24">
+                            <Canvas>
+                                <Path Fill="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Button}, Path=Foreground}"
+                                      Data=" M 12.866,4.409 L 16.692,8.095 L 11.466,13.612 L 6.783,14.868 C 6.615,14.901 6.548,14.835 6.576,14.677 L 7.636,9.929 L 12.866,4.409 L 12.866,4.409 Z M 8.062,10.921 L 10.411,13.181 L 7.538,13.952 C 7.435,13.972 7.394,13.931 7.411,13.835 L 8.062,10.921 L 8.062,10.921 Z M 3.923,14.796 C 4.392,14.651 4.886,14.915 5.031,15.382 C 5.175,15.851 4.912,16.345 4.445,16.489 C 3.082,16.907 2.168,17.716 1.865,18.476 C 1.785,18.679 1.758,18.864 1.789,19.017 C 1.812,19.132 1.883,19.237 1.998,19.321 C 2.496,19.685 3.568,19.778 5.369,19.341 C 6.435,19.081 7.577,18.729 8.589,18.417 C 9.622,18.099 10.525,17.819 11.151,17.702 C 12.308,17.487 13.462,17.341 14.393,17.388 C 15.616,17.448 16.534,17.841 16.848,18.780 C 17.051,19.388 16.995,19.915 16.944,20.388 C 16.926,20.558 16.909,20.716 16.917,20.819 C 16.917,20.823 17.102,20.810 17.997,20.739 C 19.032,20.657 20.104,20.249 21.162,19.845 C 21.705,19.638 22.244,19.433 22.856,19.245 C 23.324,19.103 23.818,19.368 23.959,19.835 C 24.102,20.304 23.836,20.798 23.369,20.938 C 22.895,21.083 22.346,21.294 21.795,21.503 C 20.616,21.952 19.424,22.407 18.135,22.509 C 15.778,22.694 15.231,22.028 15.147,20.956 C 15.128,20.704 15.153,20.460 15.180,20.198 C 15.212,19.905 15.247,19.577 15.167,19.341 C 15.132,19.235 14.798,19.181 14.309,19.157 C 13.530,19.118 12.509,19.251 11.470,19.444 C 10.952,19.540 10.093,19.806 9.109,20.110 C 8.079,20.429 6.917,20.786 5.785,21.062 C 3.414,21.638 1.838,21.394 0.955,20.749 C 0.459,20.388 0.164,19.915 0.051,19.382 C -0.055,18.886 0.006,18.351 0.217,17.819 C 0.697,16.620 2.019,15.378 3.923,14.796 L 3.923,14.796 Z M 16.053,1.458 C 16.292,1.456 16.497,1.536 16.674,1.706 L 19.266,4.187 C 19.434,4.347 19.516,4.560 19.520,4.794 C 19.524,5.032 19.453,5.249 19.289,5.415 L 17.911,6.851 L 14.081,3.151 L 15.446,1.729 C 15.614,1.556 15.817,1.462 16.053,1.458 L 16.053,1.458 Z"/>
+                            </Canvas>
                         </Canvas>
                     </Viewbox>
                 </Button>
@@ -292,41 +324,6 @@
                      PreviewKeyDown="TboxesNoSpaceBar_OnPreviewKeyDown"
                      PreviewTextInput="Tb_OnlyNums_NoMinus_OnPreviewTextInput">3.5</TextBox>
 
-            <!-- lines weight -->
-            <!--<Grid Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="3">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Margin="4 2"
-                           Text="{Binding Source={StaticResource Lang}, XPath=h79}"/>
-                <ComboBox Grid.Column="1" Name="CbThinLines" Margin="4 2"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=h81}"
-                          ToolTipService.InitialShowDelay="200"
-                          ToolTipService.ShowDuration="15000">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="model:LineWeightWrapper">
-                            <TextBlock Text="{Binding Path=DisplayName}"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-
-                <TextBlock Grid.Column="2" Margin="4 2"
-                           Text="{Binding Source={StaticResource Lang}, XPath=h80}"/>
-                <ComboBox Grid.Column="3" Name="CbThickLines" Margin="4 2"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=h82}"
-                          ToolTipService.InitialShowDelay="200"
-                          ToolTipService.ShowDuration="15000">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="model:LineWeightWrapper">
-                            <TextBlock Text="{Binding Path=DisplayName}"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </Grid>-->
-            
             <!-- logo -->
             <Grid Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="4">
                 <Grid.ColumnDefinitions>
@@ -365,7 +362,7 @@
                     </Viewbox>
                 </Button>
             </Grid>
-           
+
             <GridSplitter Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
                           HorizontalAlignment="Stretch" Margin="0 4"
                           BorderBrush="{DynamicResource MidGrayBrush}" 
@@ -516,7 +513,7 @@
                            ToolTip="{Binding Source={StaticResource Lang}, XPath=h38}"/>
             </Grid>
         </Grid>
-        
+
         <!--Кнопки-->
         <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
             <Grid.RowDefinitions>
