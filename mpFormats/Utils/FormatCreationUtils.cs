@@ -1,4 +1,4 @@
-﻿namespace mpFormats
+﻿namespace mpFormats.Utils
 {
     using System;
     using System.Globalization;
@@ -8,55 +8,26 @@
     using Autodesk.AutoCAD.DatabaseServices;
     using Autodesk.AutoCAD.EditorInput;
     using Autodesk.AutoCAD.Geometry;
-    using Autodesk.AutoCAD.Runtime;
+    using Models;
     using ModPlusAPI;
     using ModPlusAPI.Windows;
 
     /// <summary>
-    /// Запуск функции и создание блока
+    /// Утилиты создания форматок
     /// </summary>
-    public class MpFormatsAdd
+    public class FormatCreationUtils
     {
-        private const string LangItem = "mpFormats";
-        private MpFormats _mpFormats;
-
-        [CommandMethod("ModPlus", "mpFormats", CommandFlags.Modal)]
-        public void StartMpFormats()
-        {
-#if !DEBUG
-            Statistic.SendCommandStarting(new ModPlusConnector());
-#endif
-
-            if (_mpFormats == null)
-            {
-                _mpFormats = new MpFormats();
-                _mpFormats.Closed += (sender, args) => _mpFormats = null;
-            }
-
-            if (_mpFormats.IsLoaded)
-                _mpFormats.Activate();
-            else
-                Application.ShowModelessWindow(Application.MainWindow.Handle, _mpFormats, false);
-        }
-
         /// <summary>
         /// Draw block
         /// </summary>
-        /// <param name="format">формат</param>
-        /// <param name="multiplicity">кратность</param>
-        /// <param name="side">Сторона кратности</param>
-        /// <param name="orientation">Ориентация</param>
-        /// <param name="number">Номер страницы (да, нет)</param>
+        /// <param name="data">Данные для создания форматки</param>
         /// <param name="copy">Копировал</param>
-        /// <param name="bottomFrame">Нижняя рамка</param>
         /// <param name="hasFpt">Есть ли начальная точка</param>
         /// <param name="insertPt">Начальная точка (для замены)</param>
         /// <param name="txtStyle">TextStyle name</param>
         /// <param name="scale">масштаб</param>
         /// <param name="rotation">Поворот</param>
         /// <param name="setCurrentLayer">Установить текущий слой</param>
-        /// <param name="accordingToGost">True - размеры некоторых форматок будут соответствовать таблице в ГОСТ,
-        /// False - размеры будут получаться математически</param>
         /// <param name="bottomLeftPt">Нижняя верхняя точка</param>
         /// <param name="topLeftPt">Верхняя левая точка</param>
         /// <param name="bottomRightPt">Нижняя правая точка</param>
@@ -64,20 +35,14 @@
         /// <param name="blockInsertionPoint">Точка вставки блока</param>
         /// <returns></returns>
         public static bool DrawBlock(
-            string format,
-            string multiplicity,
-            string side,
-            string orientation,
-            bool number,
+            FormatCreationData data,
             bool copy,
-            string bottomFrame,
             bool hasFpt,
             Point3d insertPt,
             string txtStyle,
             double scale,
             double? rotation,
             bool setCurrentLayer,
-            bool accordingToGost,
             out Point3d bottomLeftPt,
             out Point3d topLeftPt,
             out Point3d bottomRightPt,
@@ -96,7 +61,7 @@
                 using (doc.LockDocument())
                 {
                     // Задаем значение ширины и высоты в зависимости формата, кратности и стороны кратности
-                    var formatSize = GetFormatSize(format, orientation, side, multiplicity, accordingToGost);
+                    var formatSize = GetFormatSize(data);
 
                     #region points
 
@@ -106,9 +71,9 @@
                     // Для форматов А4 и А3 нижняя рамка 10мм (по ГОСТ)
                     Point3d pt11;
                     Point3d pt22;
-                    if (format.Equals("A4") || format.Equals("A3"))
+                    if (data.Name.Equals("A4") || data.Name.Equals("A3"))
                     {
-                        if (bottomFrame.Equals(Language.GetItem(LangItem, "h19")))
+                        if (data.BottomFrame.Equals(Language.GetItem("h19")))
                         {
                             pt11 = new Point3d(pt1.X + 20, pt1.Y + 10, 0.0);
                             pt22 = new Point3d(pt2.X - 5, pt2.Y + 10, 0.0);
@@ -143,16 +108,16 @@
 
                     #region block name
 
-                    var isNumber = number ? "N" : "NN";
+                    var isNumber = data.AddPageNumber ? "N" : "NN";
                     var isCopy = copy ? "C" : "NC";
-                    var isAcc = accordingToGost ? "A" : "NA";
+                    var isAcc = data.IsAccordingToGost ? "A" : "NA";
 
-                    var blockName = multiplicity.Equals("1") 
-                        ? $"{format}_{orientation}_{side}_{isNumber}_{isCopy}_{isAcc}" 
-                        : $"{format}x{multiplicity}_{orientation}_{side}_{isNumber}_{isCopy}_{isAcc}";
+                    var blockName = data.Multiplicity == 1
+                        ? $"{data.Name}_{data.Orientation}_{data.MultiplicitySide}_{isNumber}_{isCopy}_{isAcc}" 
+                        : $"{data.Name}x{data.Multiplicity}_{data.Orientation}_{data.MultiplicitySide}_{isNumber}_{isCopy}_{isAcc}";
 
-                    if (format.Equals("A4") || format.Equals("A3"))
-                        blockName = $"{blockName}_{bottomFrame}";
+                    if (data.Name.Equals("A4") || data.Name.Equals("A3"))
+                        blockName = $"{blockName}_{data.BottomFrame}";
 
                     #endregion
 
@@ -214,7 +179,7 @@
                             }
                             catch
                             {
-                                MessageBox.Show(Language.GetItem(LangItem, "err14"));
+                                MessageBox.Show(Language.GetItem("err14"));
                             }
 
                             var btr = new BlockTableRecord { Name = blockName };
@@ -267,9 +232,9 @@
                                 Linetype = "Continuous",
                                 Color = Color.FromColorIndex(ColorMethod.ByBlock, 0),
                                 TextStyleId = tst[txtStyle],
-                                TextString = !multiplicity.Equals("1")
-                                    ? "Формат" + " " + format + "x" + multiplicity
-                                    : "Формат" + " " + format
+                                TextString = data.Multiplicity != 1
+                                    ? $"Формат {data.Name}x{data.Multiplicity}"
+                                    : $"Формат {data.Name}"
                             };
 
                             // Копировал
@@ -290,7 +255,7 @@
                             }
 
                             // Номер листа
-                            if (number)
+                            if (data.AddPageNumber)
                             {
                                 var ptn1 = new Point3d(pt33.X - 10, pt33.Y, 0.0);
                                 var ptn2 = new Point3d(ptn1.X, ptn1.Y - 7, 0.0);
@@ -399,7 +364,7 @@
 
                 return returned;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 ExceptionBox.Show(ex);
                 return false;
@@ -407,9 +372,9 @@
         }
 
         public static bool DrawBlockHand(
+            FormatCreationData data,
             double width,
             double height,
-            bool number, // Номер страницы (да, нет)
             bool copy, // Копировал
             bool hasFpt, // Есть ли начальная точка
             Point3d insertPt, // Начальная точка (для замены)
@@ -435,11 +400,10 @@
                 using (doc.LockDocument())
                 {
                     #region block name
-                    var isNumber = number ? "N" : "NN";
+                    var isNumber = data.AddPageNumber ? "N" : "NN";
                     var isCopy = copy ? "C" : "NC";
-                    var blockName = width.ToString(CultureInfo.InvariantCulture) + "x" +
-                                    height.ToString(CultureInfo.InvariantCulture) + "_" +
-                                    isNumber + "_" + isCopy;
+                    var blockName =
+                        $"{width.ToString(CultureInfo.InvariantCulture)}x{height.ToString(CultureInfo.InvariantCulture)}_{isNumber}_{isCopy}";
                     #endregion
 
                     #region points
@@ -530,7 +494,7 @@
                             }
                             catch
                             {
-                                MessageBox.Show(Language.GetItem(LangItem, "err14"));
+                                MessageBox.Show(Language.GetItem("err14"));
                             }
 
                             var btr = new BlockTableRecord { Name = blockName };
@@ -603,7 +567,7 @@
                                 objectCollection.Add(txt2);
                             }
 
-                            if (number)
+                            if (data.AddPageNumber)
                             {
                                 var ptn1 = new Point3d(pt33.X - 10, pt33.Y, 0.0);
                                 var ptn2 = new Point3d(ptn1.X, ptn1.Y - 7, 0.0);
@@ -709,7 +673,7 @@
 
                 return returned;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 ExceptionBox.Show(ex);
                 return false;
@@ -743,25 +707,19 @@
         }
 
         public static void ReplaceBlock(
-            string format, // формат
-            string multiplicity, // кратность
-            string side, // Сторона кратности
-            string orientation, // Ориентация
-            bool number, // Номер страницы (да, нет)
+            FormatCreationData data,
             bool copy, // Копировал
-            string bottomFrame, // Нижняя рамка
             string txtStyle,
             double scale,
-            bool setCurrentLayer,
-            bool accordingToGost)
+            bool setCurrentLayer)
         {
             try
             {
                 var doc = Application.DocumentManager.MdiActiveDocument;
                 var db = doc.Database;
                 var ed = doc.Editor;
-                var peo = new PromptEntityOptions("\n" + Language.GetItem(LangItem, "msg9"));
-                peo.SetRejectMessage("\n" + Language.GetItem(LangItem, "msg10"));
+                var peo = new PromptEntityOptions($"\n{Language.GetItem("msg9")}");
+                peo.SetRejectMessage($"\n{Language.GetItem("msg10")}");
                 peo.AddAllowedClass(typeof(BlockReference), false);
                 var per = ed.GetEntity(peo);
                 if (per.Status != PromptStatus.OK)
@@ -786,20 +744,14 @@
                                     var rotation = blockReference.Rotation;
                                     blockReference.Erase(true);
                                     DrawBlock(
-                                        format,
-                                        multiplicity,
-                                        side,
-                                        orientation,
-                                        number,
+                                        data,
                                         copy,
-                                        bottomFrame,
                                         true,
                                         pt,
                                         txtStyle,
                                         scale,
                                         rotation,
                                         setCurrentLayer,
-                                        accordingToGost,
                                         out _,
                                         out _,
                                         out _,
@@ -814,16 +766,16 @@
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 ExceptionBox.Show(ex);
             }
         }
 
         public static void ReplaceBlockHand(
+            FormatCreationData data,
             double width,
             double height,
-            bool number, // Номер страницы (да, нет)
             bool copy, // Копировал
             string txtStyle,
             double scale,
@@ -834,8 +786,8 @@
                 var doc = Application.DocumentManager.MdiActiveDocument;
                 var db = doc.Database;
                 var ed = doc.Editor;
-                var peo = new PromptEntityOptions("\n" + Language.GetItem(LangItem, "msg9"));
-                peo.SetRejectMessage("\n" + Language.GetItem(LangItem, "msg10"));
+                var peo = new PromptEntityOptions($"\n{Language.GetItem("msg9")}");
+                peo.SetRejectMessage($"\n{Language.GetItem("msg10")}");
                 peo.AddAllowedClass(typeof(BlockReference), false);
                 var per = ed.GetEntity(peo);
                 if (per.Status != PromptStatus.OK)
@@ -861,9 +813,9 @@
                                     blk.Erase(true);
 
                                     DrawBlockHand(
+                                        data,
                                         width,
                                         height,
-                                        number,
                                         copy,
                                         true,
                                         pt,
@@ -885,7 +837,7 @@
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 ExceptionBox.Show(ex);
             }
@@ -894,281 +846,270 @@
         /// <summary>
         /// Get format size
         /// </summary>
-        /// <param name="format">Format name</param>
-        /// <param name="orientation">Sheet orientation</param>
-        /// <param name="side">Side of multiplicity</param>
-        /// <param name="multiplicityString">Multiplicity string value</param>
-        /// <param name="accordingToGost">True - размеры некоторых форматок будут соответствовать таблице в ГОСТ,
-        /// False - размеры будут получаться математически</param>
+        /// <param name="data">Данные для создания форматки</param>
         /// <returns>Instance of <see cref="FormatSize"/></returns>
-        public static FormatSize GetFormatSize(
-            string format,
-            string orientation,
-            string side,
-            string multiplicityString,
-            bool accordingToGost)
+        public static FormatSize GetFormatSize(FormatCreationData data)
         {
-            var isLandscape = orientation.Equals(Language.GetItem(LangItem, "h8"));
-            var isShortSizeMultiplicity = side.Equals(Language.GetItem(LangItem, "h11"));
-            var multiplicity = int.Parse(multiplicityString);
+            var isLandscape = data.Orientation.Equals(Language.GetItem("h8"));
+            var isShortSizeMultiplicity = data.MultiplicitySide.Equals(Language.GetItem("h11"));
 
-            if (format.Equals("A0"))
+            if (data.Name.Equals("A0"))
             {
-                if (multiplicity > 1)
+                if (data.Multiplicity > 1)
                 {
                     if (isLandscape)
                     {
                         return isShortSizeMultiplicity
-                            ? new FormatSize(841 * multiplicity, 1189)
-                            : new FormatSize(1189 * multiplicity, 841);
+                            ? new FormatSize(841 * data.Multiplicity, 1189)
+                            : new FormatSize(1189 * data.Multiplicity, 841);
                     }
 
                     return isShortSizeMultiplicity
-                        ? new FormatSize(1189, 841 * multiplicity)
-                        : new FormatSize(841, 1189 * multiplicity);
+                        ? new FormatSize(1189, 841 * data.Multiplicity)
+                        : new FormatSize(841, 1189 * data.Multiplicity);
                 }
 
                 return isLandscape ? new FormatSize(1189, 841) : new FormatSize(841, 1189);
             }
 
-            if (format.Equals("A1"))
+            if (data.Name.Equals("A1"))
             {
-                if (multiplicity > 1)
+                if (data.Multiplicity > 1)
                 {
                     if (isLandscape)
                     {
                         if (isShortSizeMultiplicity)
                         {
-                            if (accordingToGost)
+                            if (data.IsAccordingToGost)
                             {
-                                if (multiplicity == 3)
+                                if (data.Multiplicity == 3)
                                     return new FormatSize(1783, 841);
-                                if (multiplicity == 4)
+                                if (data.Multiplicity == 4)
                                     return new FormatSize(2378, 841);
                             }
 
-                            return new FormatSize(594 * multiplicity, 841);
+                            return new FormatSize(594 * data.Multiplicity, 841);
                         }
 
-                        return new FormatSize(841 * multiplicity, 594);
+                        return new FormatSize(841 * data.Multiplicity, 594);
                     }
 
                     if (isShortSizeMultiplicity)
                     {
-                        if (accordingToGost)
+                        if (data.IsAccordingToGost)
                         {
-                            if (multiplicity == 3)
+                            if (data.Multiplicity == 3)
                                 return new FormatSize(841, 1783);
-                            if (multiplicity == 4)
+                            if (data.Multiplicity == 4)
                                 return new FormatSize(841, 2378);
                         }
 
-                        return new FormatSize(841, 594 * multiplicity);
+                        return new FormatSize(841, 594 * data.Multiplicity);
                     }
 
-                    return new FormatSize(594, 841 * multiplicity);
+                    return new FormatSize(594, 841 * data.Multiplicity);
                 }
 
                 return isLandscape ? new FormatSize(841, 594) : new FormatSize(594, 841);
             }
 
-            if (format.Equals("A2"))
+            if (data.Name.Equals("A2"))
             {
-                if (multiplicity > 1)
+                if (data.Multiplicity > 1)
                 {
                     if (isLandscape)
                     {
                         if (isShortSizeMultiplicity)
                         {
-                            if (accordingToGost)
+                            if (data.IsAccordingToGost)
                             {
-                                if (multiplicity == 3)
+                                if (data.Multiplicity == 3)
                                     return new FormatSize(1261, 594);
-                                if (multiplicity == 4)
+                                if (data.Multiplicity == 4)
                                     return new FormatSize(1682, 594);
-                                if (multiplicity == 5)
+                                if (data.Multiplicity == 5)
                                     return new FormatSize(2102, 594);
                             }
 
-                            return new FormatSize(420 * multiplicity, 594);
+                            return new FormatSize(420 * data.Multiplicity, 594);
                         }
 
-                        return new FormatSize(594 * multiplicity, 420);
+                        return new FormatSize(594 * data.Multiplicity, 420);
                     }
 
                     if (isShortSizeMultiplicity)
                     {
-                        if (accordingToGost)
+                        if (data.IsAccordingToGost)
                         {
-                            if (multiplicity == 3)
+                            if (data.Multiplicity == 3)
                                 return new FormatSize(594, 1261);
-                            if (multiplicity == 4)
+                            if (data.Multiplicity == 4)
                                 return new FormatSize(594, 1682);
-                            if (multiplicity == 5)
+                            if (data.Multiplicity == 5)
                                 return new FormatSize(594, 2102);
                         }
 
-                        return new FormatSize(594, 420 * multiplicity);
+                        return new FormatSize(594, 420 * data.Multiplicity);
                     }
 
-                    return new FormatSize(420, 594 * multiplicity);
+                    return new FormatSize(420, 594 * data.Multiplicity);
                 }
 
                 return isLandscape ? new FormatSize(594, 420) : new FormatSize(420, 594);
             }
 
-            if (format.Equals("A3"))
+            if (data.Name.Equals("A3"))
             {
-                if (multiplicity > 1)
+                if (data.Multiplicity > 1)
                 {
                     if (isLandscape)
                     {
                         if (isShortSizeMultiplicity)
                         {
-                            if (accordingToGost)
+                            if (data.IsAccordingToGost)
                             {
-                                if (multiplicity == 4)
+                                if (data.Multiplicity == 4)
                                     return new FormatSize(1189, 420);
-                                if (multiplicity == 5)
+                                if (data.Multiplicity == 5)
                                     return new FormatSize(1486, 420);
-                                if (multiplicity == 6)
+                                if (data.Multiplicity == 6)
                                     return new FormatSize(1783, 420);
-                                if (multiplicity == 7)
+                                if (data.Multiplicity == 7)
                                     return new FormatSize(2080, 420);
                             }
 
-                            return new FormatSize(297 * multiplicity, 420);
+                            return new FormatSize(297 * data.Multiplicity, 420);
                         }
 
-                        return new FormatSize(420 * multiplicity, 297);
+                        return new FormatSize(420 * data.Multiplicity, 297);
                     }
 
                     if (isShortSizeMultiplicity)
                     {
-                        if (accordingToGost)
+                        if (data.IsAccordingToGost)
                         {
-                            if (multiplicity == 4)
+                            if (data.Multiplicity == 4)
                                 return new FormatSize(420, 1189);
-                            if (multiplicity == 5)
+                            if (data.Multiplicity == 5)
                                 return new FormatSize(420, 1486);
-                            if (multiplicity == 6)
+                            if (data.Multiplicity == 6)
                                 return new FormatSize(420, 1783);
-                            if (multiplicity == 7)
+                            if (data.Multiplicity == 7)
                                 return new FormatSize(420, 2080);
                         }
 
-                        return new FormatSize(420, 297 * multiplicity);
+                        return new FormatSize(420, 297 * data.Multiplicity);
                     }
 
-                    return new FormatSize(297, 420 * multiplicity);
+                    return new FormatSize(297, 420 * data.Multiplicity);
                 }
 
                 return isLandscape ? new FormatSize(420, 297) : new FormatSize(297, 420);
             }
 
-            if (format.Equals("A4"))
+            if (data.Name.Equals("A4"))
             {
-                if (multiplicity > 1)
+                if (data.Multiplicity > 1)
                 {
                     if (isLandscape)
                     {
                         if (isShortSizeMultiplicity)
                         {
-                            if (accordingToGost)
+                            if (data.IsAccordingToGost)
                             {
-                                if (multiplicity == 4)
+                                if (data.Multiplicity == 4)
                                     return new FormatSize(841, 297);
-                                if (multiplicity == 5)
+                                if (data.Multiplicity == 5)
                                     return new FormatSize(1051, 297);
-                                if (multiplicity == 6)
+                                if (data.Multiplicity == 6)
                                     return new FormatSize(1261, 297);
-                                if (multiplicity == 7)
+                                if (data.Multiplicity == 7)
                                     return new FormatSize(1471, 297);
-                                if (multiplicity == 8)
+                                if (data.Multiplicity == 8)
                                     return new FormatSize(1682, 297);
-                                if (multiplicity == 9)
+                                if (data.Multiplicity == 9)
                                     return new FormatSize(1892, 297);
                             }
 
-                            return new FormatSize(210 * multiplicity, 297);
+                            return new FormatSize(210 * data.Multiplicity, 297);
                         }
 
-                        return new FormatSize(297 * multiplicity, 210);
+                        return new FormatSize(297 * data.Multiplicity, 210);
                     }
 
                     if (isShortSizeMultiplicity)
                     {
-                        if (accordingToGost)
+                        if (data.IsAccordingToGost)
                         {
-                            if (multiplicity == 4)
+                            if (data.Multiplicity == 4)
                                 return new FormatSize(297, 841);
-                            if (multiplicity == 5)
+                            if (data.Multiplicity == 5)
                                 return new FormatSize(297, 1051);
-                            if (multiplicity == 6)
+                            if (data.Multiplicity == 6)
                                 return new FormatSize(297, 1261);
-                            if (multiplicity == 7)
+                            if (data.Multiplicity == 7)
                                 return new FormatSize(297, 1471);
-                            if (multiplicity == 8)
+                            if (data.Multiplicity == 8)
                                 return new FormatSize(297, 1682);
-                            if (multiplicity == 9)
+                            if (data.Multiplicity == 9)
                                 return new FormatSize(297, 1892);
                         }
 
-                        return new FormatSize(297, 210 * multiplicity);
+                        return new FormatSize(297, 210 * data.Multiplicity);
                     }
 
-                    return new FormatSize(210, 297 * multiplicity);
+                    return new FormatSize(210, 297 * data.Multiplicity);
                 }
 
                 return isLandscape ? new FormatSize(297, 210) : new FormatSize(210, 297);
             }
 
-            if (format.Equals("A5"))
+            if (data.Name.Equals("A5"))
                 return isLandscape ? new FormatSize(210, 148) : new FormatSize(148, 210);
 
-            if (format.Equals("A6"))
+            if (data.Name.Equals("A6"))
                 return isLandscape ? new FormatSize(148, 105) : new FormatSize(105, 148);
 
-            if (format.Equals("B0"))
+            if (data.Name.Equals("B0"))
                 return isLandscape ? new FormatSize(1414, 1000) : new FormatSize(1000, 1414);
 
-            if (format.Equals("B1"))
+            if (data.Name.Equals("B1"))
                 return isLandscape ? new FormatSize(1000, 707) : new FormatSize(707, 1000);
 
-            if (format.Equals("B2"))
+            if (data.Name.Equals("B2"))
                 return isLandscape ? new FormatSize(707, 500) : new FormatSize(500, 707);
 
-            if (format.Equals("B3"))
+            if (data.Name.Equals("B3"))
                 return isLandscape ? new FormatSize(500, 353) : new FormatSize(353, 500);
 
-            if (format.Equals("B4"))
+            if (data.Name.Equals("B4"))
                 return isLandscape ? new FormatSize(353, 250) : new FormatSize(250, 353);
 
-            if (format.Equals("B5"))
+            if (data.Name.Equals("B5"))
                 return isLandscape ? new FormatSize(250, 176) : new FormatSize(176, 250);
 
-            if (format.Equals("B6"))
+            if (data.Name.Equals("B6"))
                 return isLandscape ? new FormatSize(250, 176) : new FormatSize(176, 250);
 
-            if (format.Equals("C0"))
+            if (data.Name.Equals("C0"))
                 return isLandscape ? new FormatSize(1297, 917) : new FormatSize(917, 1297);
 
-            if (format.Equals("C1"))
+            if (data.Name.Equals("C1"))
                 return isLandscape ? new FormatSize(917, 648) : new FormatSize(648, 917);
 
-            if (format.Equals("C2"))
+            if (data.Name.Equals("C2"))
                 return isLandscape ? new FormatSize(648, 458) : new FormatSize(458, 648);
 
-            if (format.Equals("C3"))
+            if (data.Name.Equals("C3"))
                 return isLandscape ? new FormatSize(458, 324) : new FormatSize(324, 458);
 
-            if (format.Equals("C4"))
+            if (data.Name.Equals("C4"))
                 return isLandscape ? new FormatSize(324, 229) : new FormatSize(229, 324);
 
-            if (format.Equals("C5"))
+            if (data.Name.Equals("C5"))
                 return isLandscape ? new FormatSize(229, 162) : new FormatSize(162, 229);
 
-            throw new ArgumentOutOfRangeException(nameof(format), "Can't get format size");
+            throw new ArgumentOutOfRangeException(nameof(data.Name), "Can't get format size");
         }
     }
 }

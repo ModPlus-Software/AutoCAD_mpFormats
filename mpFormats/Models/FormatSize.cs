@@ -1,4 +1,4 @@
-﻿namespace mpFormats
+﻿namespace mpFormats.Models
 {
     /// <summary>
     /// Format size

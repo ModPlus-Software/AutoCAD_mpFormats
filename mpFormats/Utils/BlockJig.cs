@@ -1,4 +1,4 @@
-﻿namespace mpFormats
+﻿namespace mpFormats.Utils
 {
     using Autodesk.AutoCAD.DatabaseServices;
     using Autodesk.AutoCAD.EditorInput;
@@ -46,7 +46,6 @@
             {
                 ((BlockReference)Entity).Position = _mActualPoint;
                 ReplaceVector3D = _mCenterPt.GetVectorTo(_mActualPoint);
-
             }
             catch (System.Exception)
             {

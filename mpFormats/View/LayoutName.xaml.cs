@@ -1,4 +1,4 @@
-﻿namespace mpFormats
+﻿namespace mpFormats.View
 {
     using System;
     using System.Collections.Generic;

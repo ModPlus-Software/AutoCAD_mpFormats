@@ -1,7 +1,6 @@
-﻿namespace mpFormats
+﻿namespace mpFormats.View
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
@@ -14,19 +13,18 @@
     using System.Xml.Linq;
     using Autodesk.AutoCAD.DatabaseServices;
     using Autodesk.AutoCAD.Geometry;
-    using Autodesk.AutoCAD.Internal;
     using Autodesk.AutoCAD.Runtime;
     using Autodesk.AutoCAD.Windows;
     using Models;
-    using ModPlus.Model;
     using ModPlusAPI;
     using ModPlusAPI.IO;
     using ModPlusAPI.Windows;
+    using Utils;
     using AcApp = Autodesk.AutoCAD.ApplicationServices.Core.Application;
     using MessageBox = ModPlusAPI.Windows.MessageBox;
     using Visibility = System.Windows.Visibility;
 
-    public partial class MpFormats
+    public partial class MainWindow
     {
         private const string LangItem = "mpFormats";
         public static int Namecol;// Количество допустимых фамилий
@@ -47,7 +45,7 @@
         private static string _lname = string.Empty;
         private static string _lnumber = string.Empty;
 
-        public MpFormats()
+        public MainWindow()
         {
             InitializeComponent();
             Title = ModPlusAPI.Language.GetItem(LangItem, "h4");
@@ -55,14 +53,6 @@
             // Настройки видимости для штампа отключаем тут, чтобы видеть в редакторе окна
             GridStamp.Visibility =
             CbLogo.Visibility = GridSplitterStamp.Visibility = Visibility.Collapsed;
-
-            CbGostFormats.ItemsSource = new[] { "A0", "A1", "A2", "A3", "A4", "A5" };
-            CbIsoFormats.ItemsSource = new[]
-            {
-                "A0", "A1", "A2", "A3", "A4", "A5", "A6",
-                "B0", "B1", "B2", "B3", "B4", "B5", "B6",
-                "C0", "C1", "C2", "C3", "C4", "C5"
-            };
         }
 
         private void MetroWindow_MouseEnter(object sender, MouseEventArgs e)
@@ -72,7 +62,7 @@
 
         private void MetroWindow_MouseLeave(object sender, MouseEventArgs e)
         {
-            Utils.SetFocusToDwgView();
+            Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -144,10 +134,8 @@
                 ChangeBottomFrameVisibility();
 
                 // Проверка файла со штампами
-                if (!CheckTableFileExist())
+                if (!CheckStampsFileExist(out _))
                 {
-                    MessageBox.Show(ModPlusAPI.Language.GetItem(LangItem, "err5"), MessageBoxIcon.Alert);
-
                     // Видимость
                     GridStamp.Visibility =
                         CbLogo.Visibility =
@@ -204,22 +192,20 @@
             }
         }
 
-        private static bool CheckTableFileExist()
+        private static bool CheckStampsFileExist(out string stampsFileName)
         {
-            var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("ModPlus");
-            using (key)
-            {
-                if (key != null)
-                {
-                    // Директория расположения файла
-                    var dir = Path.Combine(Constants.AppDataDirectory, "Data", "Dwg");
+            // Директория расположения файла
+            var dir = Path.Combine(Constants.AppDataDirectory, "Data", "Dwg");
 
-                    // Имя файла из которого берем таблицу
-                    var sourceFileName = Path.Combine(dir, "Stamps.dwg");
-                    return File.Exists(sourceFileName);
-                }
+            // Имя файла из которого берем таблицу
+            stampsFileName = Path.Combine(dir, "Stamps.dwg");
+            if (File.Exists(stampsFileName))
+            {
+                return true;
             }
 
+            // Не найден файл со штампами!\nЗапустите плагин "Штампы" для распаковки dwg-файла со штампами
+            MessageBox.Show(ModPlusAPI.Language.GetItem(LangItem, "err5"), MessageBoxIcon.Alert);
             return false;
         }
 
@@ -228,14 +214,7 @@
             CbDocumentsFor.SelectedIndex =
                 int.TryParse(UserConfigFile.GetValue(LangItem, "CbDocumentsFor"), out var index) ? index : 0;
 
-            // format
-            CbGostFormats.SelectedIndex = int.TryParse(UserConfigFile.GetValue(LangItem, "CbGostFormats"), out var i) ? i : 3;
-            FillMultiplicity();
-            CbIsoFormats.SelectedIndex = int.TryParse(UserConfigFile.GetValue(LangItem, "CbIsoFormats"), out i) ? i : 3;
-            CbMultiplicity.SelectedIndex = int.TryParse(UserConfigFile.GetValue(LangItem, "CbMultiplicity"), out i)
-                ? CbMultiplicity.Items.Count < i ? i : 0
-                : 0;
-            CbBottomFrame.SelectedIndex = int.TryParse(UserConfigFile.GetValue(LangItem, "CbBottomFrame"), out i) ? i : 0;
+            CbBottomFrame.SelectedIndex = int.TryParse(UserConfigFile.GetValue(LangItem, "CbBottomFrame"), out var i) ? i : 0;
             ChkAccordingToGost.IsChecked = bool.TryParse(UserConfigFile.GetValue(LangItem, "AccordingToGost"), out var b) && b;
 
             // Выбранный штамп
@@ -763,48 +742,9 @@
 
         private void CbGostFormats_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            FillMultiplicity();
-            CbMultiplicity.SelectedIndex = 0;
-
             ChangeBottomFrameVisibility();
 
             ShowFormatSize();
-        }
-
-        private void FillMultiplicity()
-        {
-            string[] multiplicityValues = null;
-            if (CbGostFormats.SelectedItem.ToString() == "A0")
-            {
-                multiplicityValues = new[] { "1", "2", "3" };
-            }
-
-            if (CbGostFormats.SelectedItem.ToString() == "A1")
-            {
-                multiplicityValues = new[] { "1", "3", "4" };
-            }
-
-            if (CbGostFormats.SelectedItem.ToString() == "A2")
-            {
-                multiplicityValues = new[] { "1", "3", "4", "5" };
-            }
-
-            if (CbGostFormats.SelectedItem.ToString() == "A3")
-            {
-                multiplicityValues = new[] { "1", "3", "4", "5", "6", "7" };
-            }
-
-            if (CbGostFormats.SelectedItem.ToString() == "A4")
-            {
-                multiplicityValues = new[] { "1", "3", "4", "5", "6", "7", "8", "9" };
-            }
-
-            if (CbGostFormats.SelectedItem.ToString() == "A5")
-            {
-                multiplicityValues = new[] { "1" };
-            }
-
-            CbMultiplicity.ItemsSource = multiplicityValues;
         }
 
         private void ChangeBottomFrameVisibility()
@@ -845,48 +785,25 @@
                 Vector3d replaceVector3D;
                 Point3d blockInsertionPoint3D;
 
+                var creationData = GetFormatCreationData();
+
                 if (Tabs.SelectedIndex == 0 || Tabs.SelectedIndex == 1)
                 {
-                    string side, orientation;
-                    if (RbShort.IsChecked != null && RbShort.IsChecked.Value)
-                        side = ModPlusAPI.Language.GetItem(LangItem, "h11");
-                    else
-                        side = ModPlusAPI.Language.GetItem(LangItem, "h12");
-                    if (RbHorizontal.IsChecked != null && RbHorizontal.IsChecked.Value)
-                        orientation = ModPlusAPI.Language.GetItem(LangItem, "h8");
-                    else
-                        orientation = ModPlusAPI.Language.GetItem(LangItem, "h9");
-                    var number = ChbNumber.IsChecked != null && ChbNumber.IsChecked.Value;
-
-                    var format = Tabs.SelectedIndex == 0
-                        ? CbGostFormats.SelectedItem.ToString()
-                        : CbIsoFormats.SelectedItem.ToString();
-                    var multiplicity = Tabs.SelectedIndex == 0 ? CbMultiplicity.SelectedItem.ToString() : "1";
-                    var accordingToGost = ChkAccordingToGost.IsChecked != null && ChkAccordingToGost.IsChecked.Value;
-
                     Hide();
                     try
                     {
-                        Utils.SetFocusToDwgView();
+                        Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
 
                         // Форматка
-                        if (MpFormatsAdd.DrawBlock(
-                                format,
-                                multiplicity,
-                                side,
-                                orientation,
-                                number,
+                        if (FormatCreationUtils.DrawBlock(
+                                creationData,
                                 ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                CbBottomFrame.SelectedIndex == 0
-                                    ? ModPlusAPI.Language.GetItem(LangItem, "h18")
-                                    : ModPlusAPI.Language.GetItem(LangItem, "h19"),
                                 false,
                                 new Point3d(0.0, 0.0, 0.0),
                                 CbTextStyle.SelectedItem.ToString(),
                                 Scale(CbScales.SelectedItem.ToString()),
                                 null,
                                 ChkSetCurrentLayer.IsChecked ?? false,
-                                accordingToGost,
                                 out bottomLeftPt,
                                 out topLeftPt,
                                 out bottomRightPt,
@@ -939,24 +856,24 @@
                     Hide();
                     try
                     {
-                        Utils.SetFocusToDwgView();
+                        Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
 
-                        if (MpFormatsAdd.DrawBlockHand(
-                                TbFormatLength.Value.Value,
-                                TbFormatHeight.Value.Value,
-                                number,
-                                ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                false,
-                                new Point3d(0.0, 0.0, 0.0),
-                                CbTextStyle.SelectedItem.ToString(),
-                                Scale(CbScales.SelectedItem.ToString()),
-                                null,
-                                ChkSetCurrentLayer.IsChecked ?? false,
-                                out bottomLeftPt,
-                                out topLeftPt,
-                                out bottomRightPt,
-                                out replaceVector3D,
-                                out blockInsertionPoint3D))
+                        if (FormatCreationUtils.DrawBlockHand(
+                            creationData,
+                            TbFormatLength.Value.Value,
+                            TbFormatHeight.Value.Value,
+                            ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
+                            false,
+                            new Point3d(0.0, 0.0, 0.0),
+                            CbTextStyle.SelectedItem.ToString(),
+                            Scale(CbScales.SelectedItem.ToString()),
+                            null,
+                            ChkSetCurrentLayer.IsChecked ?? false,
+                            out bottomLeftPt,
+                            out topLeftPt,
+                            out bottomRightPt,
+                            out replaceVector3D,
+                            out blockInsertionPoint3D))
                         {
                             AddStamps(
                                 bottomLeftPt,
@@ -983,43 +900,21 @@
         {
             try
             {
+                var creationData = GetFormatCreationData();
+
                 if (Tabs.SelectedIndex == 0 || Tabs.SelectedIndex == 1)
                 {
-                    string side, orientation;
-
-                    if (RbShort.IsChecked != null && RbShort.IsChecked.Value)
-                        side = ModPlusAPI.Language.GetItem(LangItem, "h11");
-                    else
-                        side = ModPlusAPI.Language.GetItem(LangItem, "h12");
-                    if (RbHorizontal.IsChecked != null && RbHorizontal.IsChecked.Value)
-                        orientation = ModPlusAPI.Language.GetItem(LangItem, "h8");
-                    else
-                        orientation = ModPlusAPI.Language.GetItem(LangItem, "h9");
-                    var number = ChbNumber.IsChecked != null && ChbNumber.IsChecked.Value;
-
-                    var format = Tabs.SelectedIndex == 0
-                        ? CbGostFormats.SelectedItem.ToString()
-                        : CbIsoFormats.SelectedItem.ToString();
-                    var multiplicity = Tabs.SelectedIndex == 0 ? CbMultiplicity.SelectedItem.ToString() : "1";
-                    var accordingToGost = ChkAccordingToGost.IsChecked != null && ChkAccordingToGost.IsChecked.Value;
-
                     Hide();
                     try
                     {
-                        Utils.SetFocusToDwgView();
+                        Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
 
-                        MpFormatsAdd.ReplaceBlock(
-                                format,
-                                multiplicity,
-                                side,
-                                orientation,
-                                number,
+                        FormatCreationUtils.ReplaceBlock(
+                                creationData,
                                 ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                CbBottomFrame.SelectionBoxItem.ToString(),
                                 CbTextStyle.SelectedItem.ToString(),
                                 Scale(CbScales.SelectedItem.ToString()),
-                                ChkSetCurrentLayer.IsChecked ?? false,
-                                accordingToGost);
+                                ChkSetCurrentLayer.IsChecked ?? false);
                     }
                     finally
                     {
@@ -1053,21 +948,19 @@
                         return;
                     }
 
-                    var number = ChbNumber.IsChecked != null && ChbNumber.IsChecked.Value;
-
                     Show();
                     try
                     {
-                        Utils.SetFocusToDwgView();
+                        Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
 
-                        MpFormatsAdd.ReplaceBlockHand(
-                                TbFormatLength.Value.Value,
-                                TbFormatHeight.Value.Value,
-                                number,
-                                ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                CbTextStyle.SelectedItem.ToString(),
-                                Scale(CbScales.SelectedItem.ToString()),
-                                ChkSetCurrentLayer.IsChecked ?? false);
+                        FormatCreationUtils.ReplaceBlockHand(
+                            creationData,
+                            TbFormatLength.Value.Value,
+                            TbFormatHeight.Value.Value,
+                            ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
+                            CbTextStyle.SelectedItem.ToString(),
+                            Scale(CbScales.SelectedItem.ToString()),
+                            ChkSetCurrentLayer.IsChecked ?? false);
                     }
                     finally
                     {
@@ -1091,25 +984,10 @@
                 Vector3d replaceVector3D;
                 Point3d blockInsertionPoint3D;
 
+                var creationData = GetFormatCreationData();
+
                 if (Tabs.SelectedIndex == 0 || Tabs.SelectedIndex == 1)
                 {
-                    string side, orientation;
-                    if (RbShort.IsChecked != null && RbShort.IsChecked.Value)
-                        side = ModPlusAPI.Language.GetItem(LangItem, "h11");
-                    else
-                        side = ModPlusAPI.Language.GetItem(LangItem, "h12");
-                    if (RbHorizontal.IsChecked != null && RbHorizontal.IsChecked.Value)
-                        orientation = ModPlusAPI.Language.GetItem(LangItem, "h8");
-                    else
-                        orientation = ModPlusAPI.Language.GetItem(LangItem, "h9");
-                    var number = ChbNumber.IsChecked != null && ChbNumber.IsChecked.Value;
-
-                    var format = Tabs.SelectedIndex == 0
-                        ? CbGostFormats.SelectedItem.ToString()
-                        : CbIsoFormats.SelectedItem.ToString();
-                    var multiplicity = Tabs.SelectedIndex == 0 ? CbMultiplicity.SelectedItem.ToString() : "1";
-                    var accordingToGost = ChkAccordingToGost.IsChecked != null && ChkAccordingToGost.IsChecked.Value;
-
                     // Переменная указывает, следует ли оставить масштаб 1:1
                     // Создаем лист
                     if (!CreateLayout(out var layoutScaleOneToOne))
@@ -1117,30 +995,22 @@
                     Hide();
                     try
                     {
-                        Utils.SetFocusToDwgView();
+                        Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
 
-                        if (MpFormatsAdd.DrawBlock(
-                                format,
-                                multiplicity,
-                                side,
-                                orientation,
-                                number,
-                                ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                CbBottomFrame.SelectedIndex == 0
-                                    ? ModPlusAPI.Language.GetItem(LangItem, "h18")
-                                    : ModPlusAPI.Language.GetItem(LangItem, "h19"),
-                                true,
-                                new Point3d(0.0, 0.0, 0.0),
-                                CbTextStyle.SelectedItem.ToString(),
-                                layoutScaleOneToOne ? 1 : Scale(CbScales.SelectedItem.ToString()),
-                                null,
-                                ChkSetCurrentLayer.IsChecked ?? false,
-                                accordingToGost,
-                                out bottomLeftPt,
-                                out topLeftPt,
-                                out bottomRightPt,
-                                out replaceVector3D,
-                                out blockInsertionPoint3D))
+                        if (FormatCreationUtils.DrawBlock(
+                            creationData,
+                            ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
+                            true,
+                            new Point3d(0.0, 0.0, 0.0),
+                            CbTextStyle.SelectedItem.ToString(),
+                            layoutScaleOneToOne ? 1 : Scale(CbScales.SelectedItem.ToString()),
+                            null,
+                            ChkSetCurrentLayer.IsChecked ?? false,
+                            out bottomLeftPt,
+                            out topLeftPt,
+                            out bottomRightPt,
+                            out replaceVector3D,
+                            out blockInsertionPoint3D))
                         {
                             AddStamps(
                                 bottomLeftPt,
@@ -1182,32 +1052,30 @@
                         MessageBox.Show(ModPlusAPI.Language.GetItem(LangItem, "err9"));
                         return;
                     }
-
-                    var number = ChbNumber.IsChecked != null && ChbNumber.IsChecked.Value;
-
+                    
                     // Создаем лист
                     if (!CreateLayout(out var layoutScaleOneToOne))
                         return;
                     Hide();
                     try
                     {
-                        Utils.SetFocusToDwgView();
+                        Autodesk.AutoCAD.Internal.Utils.SetFocusToDwgView();
 
-                        if (MpFormatsAdd.DrawBlockHand(
-                                TbFormatLength.Value.Value,
-                                TbFormatHeight.Value.Value,
-                                number,
-                                ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
-                                true,
-                                new Point3d(0.0, 0.0, 0.0),
-                                CbTextStyle.SelectedItem.ToString(),
-                                layoutScaleOneToOne ? 1 : Scale(CbScales.SelectedItem.ToString()),
-                                null,
-                                ChkSetCurrentLayer.IsChecked ?? false,
-                                out bottomLeftPt,
-                                out topLeftPt,
-                                out bottomRightPt, out replaceVector3D,
-                                out blockInsertionPoint3D))
+                        if (FormatCreationUtils.DrawBlockHand(
+                            creationData,
+                            TbFormatLength.Value.Value,
+                            TbFormatHeight.Value.Value,
+                            ChbCopy.IsChecked != null && ChbCopy.IsChecked.Value,
+                            true,
+                            new Point3d(0.0, 0.0, 0.0),
+                            CbTextStyle.SelectedItem.ToString(),
+                            layoutScaleOneToOne ? 1 : Scale(CbScales.SelectedItem.ToString()),
+                            null,
+                            ChkSetCurrentLayer.IsChecked ?? false,
+                            out bottomLeftPt,
+                            out topLeftPt,
+                            out bottomRightPt, out replaceVector3D,
+                            out blockInsertionPoint3D))
                         {
                             AddStamps(
                                   bottomLeftPt,
@@ -1383,6 +1251,9 @@
             if (tablesBase.Stamps == null)
                 return;
 
+            if (!CheckStampsFileExist(out var stampsFileName))
+                return;
+
             try
             {
                 // Блокируем документ
@@ -1396,14 +1267,8 @@
                             if (!tableStyleName.Equals(xmlTbl.Attribute("tablestylename").Value))
                                 continue;
 
-                            // Директория расположения файла
-                            var dir = Path.Combine(Constants.AppDataDirectory, "Data", "Dwg");
-
-                            // Имя файла из которого берем таблицу
-                            var sourceFileName = Path.Combine(dir, "Stamps.dwg");
-
                             // Read the DWG into a side database
-                            sourceDb.ReadDwgFile(sourceFileName, FileOpenMode.OpenTryForReadShare, true, string.Empty);
+                            sourceDb.ReadDwgFile(stampsFileName, FileOpenMode.OpenTryForReadShare, true, string.Empty);
                             var tblIds = new ObjectIdCollection();
 
                             // Создаем пустую таблицу
@@ -1633,7 +1498,7 @@
                 ExceptionBox.Show(ex);
             }
         }
-        
+
         private static void AddFieldsToStamp(Table table)
         {
             try
@@ -1675,7 +1540,7 @@
                                     // Если название фирмы и есть блок в ячейке
                                     if (fieldKey.Equals("zG9") & cell.Contents[0].BlockTableRecordId != ObjectId.Null)
                                     {
-                                        if (!ModPlusAPI.Windows.MessageBox.ShowYesNo(
+                                        if (!MessageBox.ShowYesNo(
                                             ModPlusAPI.Language.GetItem(LangItem, "msg22"), MessageBoxIcon.Question))
                                         {
                                             continue;
@@ -1874,24 +1739,9 @@
         {
             try
             {
-                string side, orientation;
-                if (RbShort.IsChecked != null && RbShort.IsChecked.Value)
-                    side = ModPlusAPI.Language.GetItem(LangItem, "h11");
-                else
-                    side = ModPlusAPI.Language.GetItem(LangItem, "h12");
-                if (RbHorizontal.IsChecked != null && RbHorizontal.IsChecked.Value)
-                    orientation = ModPlusAPI.Language.GetItem(LangItem, "h8");
-                else
-                    orientation = ModPlusAPI.Language.GetItem(LangItem, "h9");
+                var creationData = GetFormatCreationData();
 
-                var format = Tabs.SelectedIndex == 0
-                    ? CbGostFormats.SelectedItem.ToString()
-                    : CbIsoFormats.SelectedItem.ToString();
-                var multiplicity = Tabs.SelectedIndex == 0 ? CbMultiplicity.SelectedItem.ToString() : "1";
-
-                var accordingToGost = ChkAccordingToGost.IsChecked != null && ChkAccordingToGost.IsChecked.Value;
-
-                var formatSize = MpFormatsAdd.GetFormatSize(format, orientation, side, multiplicity, accordingToGost);
+                var formatSize = FormatCreationUtils.GetFormatSize(creationData);
                 TbFormatSize.Text =
                     $"{formatSize.Width.ToString(CultureInfo.InvariantCulture)} x {formatSize.Height.ToString(CultureInfo.InvariantCulture)}";
             }
@@ -1943,26 +1793,6 @@
 
                 ShowFormatSize();
             }
-        }
-
-        private void ChkLogoFromBlock_OnChecked(object sender, RoutedEventArgs e)
-        {
-            ChkLogoFromFile.IsChecked = false;
-        }
-
-        private void ChkLogoFromFile_OnChecked(object sender, RoutedEventArgs e)
-        {
-            ChkLogoFromBlock.IsChecked = false;
-        }
-
-        private void ChkLogoFromBlock_OnUnchecked(object sender, RoutedEventArgs e)
-        {
-            ChkLogoFromFile.IsChecked = true;
-        }
-
-        private void ChkLogoFromFile_OnUnchecked(object sender, RoutedEventArgs e)
-        {
-            ChkLogoFromBlock.IsChecked = true;
         }
 
         private void BtGetFileForLogo_OnClick(object sender, RoutedEventArgs e)
@@ -2136,6 +1966,34 @@
             }
 
             return result;
+        }
+
+        private FormatCreationData GetFormatCreationData()
+        {
+            var creationData = new FormatCreationData();
+
+            if (RbShort.IsChecked != null && RbShort.IsChecked.Value)
+                creationData.MultiplicitySide = ModPlusAPI.Language.GetItem(LangItem, "h11");
+            else
+                creationData.MultiplicitySide = ModPlusAPI.Language.GetItem(LangItem, "h12");
+
+            if (RbHorizontal.IsChecked != null && RbHorizontal.IsChecked.Value)
+                creationData.Orientation = ModPlusAPI.Language.GetItem(LangItem, "h8");
+            else
+                creationData.Orientation = ModPlusAPI.Language.GetItem(LangItem, "h9");
+
+            creationData.AddPageNumber = ChbNumber.IsChecked != null && ChbNumber.IsChecked.Value;
+
+            creationData.Name = Tabs.SelectedIndex == 0
+                ? CbGostFormats.SelectedItem.ToString()
+                : CbIsoFormats.SelectedItem.ToString();
+            creationData.Multiplicity = Tabs.SelectedIndex == 0 ? (int)CbMultiplicity.SelectedItem : 1;
+            creationData.IsAccordingToGost = ChkAccordingToGost.IsChecked != null && ChkAccordingToGost.IsChecked.Value;
+            creationData.BottomFrame = CbBottomFrame.SelectedIndex == 0
+                ? ModPlusAPI.Language.GetItem(LangItem, "h18")
+                : ModPlusAPI.Language.GetItem(LangItem, "h19");
+
+            return creationData;
         }
     }
 }

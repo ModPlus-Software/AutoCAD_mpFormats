@@ -1,9 +1,9 @@
-﻿namespace mpFormats
+﻿namespace mpFormats.Models
 {
     /// <summary>
     /// Stamp
     /// </summary>
-    internal class Stamp
+    public class Stamp
     {
         /// <summary>
         /// Name
