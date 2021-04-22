@@ -749,22 +749,29 @@
 
         private void ChangeBottomFrameVisibility()
         {
-            PanelBottomFrame.Visibility = Visibility.Collapsed;
-            CbBottomFrame.SelectedIndex = 0;
+            try
+            {
+                PanelBottomFrame.Visibility = Visibility.Collapsed;
+                CbBottomFrame.SelectedIndex = 0;
 
-            if (Tabs.SelectedIndex == 0 &&
-                (CbGostFormats.SelectedItem.ToString() == "A3" || CbGostFormats.SelectedItem.ToString() == "A4"))
-            {
-                PanelBottomFrame.Visibility = Visibility.Visible;
-                CbBottomFrame.SelectedIndex =
-                    int.TryParse(UserConfigFile.GetValue("mpFormats", "CbBottomFrame"), out var i) ? i : 0;
+                if (Tabs.SelectedIndex == 0 &&
+                    (CbGostFormats.SelectedItem.ToString() == "A3" || CbGostFormats.SelectedItem.ToString() == "A4"))
+                {
+                    PanelBottomFrame.Visibility = Visibility.Visible;
+                    CbBottomFrame.SelectedIndex =
+                        int.TryParse(UserConfigFile.GetValue("mpFormats", "CbBottomFrame"), out var i) ? i : 0;
+                }
+                else if (Tabs.SelectedIndex == 1 &&
+                         (CbIsoFormats.SelectedItem.ToString() == "A3" || CbIsoFormats.SelectedItem.ToString() == "A4"))
+                {
+                    PanelBottomFrame.Visibility = Visibility.Visible;
+                    CbBottomFrame.SelectedIndex =
+                        int.TryParse(UserConfigFile.GetValue("mpFormats", "CbBottomFrame"), out var i) ? i : 0;
+                }
             }
-            else if (Tabs.SelectedIndex == 1 &&
-                     (CbIsoFormats.SelectedItem.ToString() == "A3" || CbIsoFormats.SelectedItem.ToString() == "A4"))
+            catch
             {
-                PanelBottomFrame.Visibility = Visibility.Visible;
-                CbBottomFrame.SelectedIndex =
-                    int.TryParse(UserConfigFile.GetValue("mpFormats", "CbBottomFrame"), out var i) ? i : 0;
+                // ignore
             }
         }
 
